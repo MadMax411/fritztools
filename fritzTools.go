@@ -21,9 +21,8 @@ func main() {
 		}
 
 		callValues := strings.Split(line, ";")
-		typeOfResp := callValues[1]
 
-		switch typeOfResp {
+		switch callValues[1] {
 		case "RING":
 			fmt.Println("Anruf von " + callValues[3])
 		case "CONNECT":
