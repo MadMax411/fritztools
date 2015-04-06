@@ -7,12 +7,18 @@ import (
 )
 
 func main() {
-	conn, err := textproto.Dial("tcp", "router.home.lan:1012")
+	host := "router.home.lan"
+	port := "1012"
+
+	conn, err := textproto.Dial("tcp", host+":"+port)
 	defer conn.Close()
 	if err != nil {
 		panic(1)
 	}
-	fmt.Println("Verbindung zur FritzBox hergestellt")
+	fmt.Println("Connected to", host)
+
+	lastAction := ""
+	currAction := ""
 
 	for {
 		line, err := conn.Reader.ReadLine()
@@ -21,14 +27,21 @@ func main() {
 		}
 
 		callValues := strings.Split(line, ";")
+		currAction = callValues[1]
 
-		switch callValues[1] {
+		switch currAction {
 		case "RING":
-			fmt.Println("Anruf von " + callValues[3])
+			fmt.Println("Call from " + callValues[3])
 		case "CONNECT":
-			fmt.Println("Angenommen von " + callValues[3])
+			fmt.Println("Connected with extention station #" + callValues[3])
 		case "DISCONNECT":
-			fmt.Println("Aufgelegt")
+			if lastAction == "RING" {
+				fmt.Println("TODO: Send a info mail...")
+			}
+
+			fmt.Println("Disconneted")
 		}
+
+		lastAction = currAction
 	}
 }
