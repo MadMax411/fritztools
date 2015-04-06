@@ -1,0 +1,14 @@
+[Fritzbox]
+host = fritz.box
+port = 1012
+
+[SMTP]
+Host = smtp.mail.com
+Port = 25
+User = user@example.com
+Password = verysecret
+
+[Mail]
+From = user@example.com
+To =  userTwo@example.com
+
