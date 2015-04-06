@@ -17,7 +17,7 @@ type lineHandler struct {
 
 func SendMail( subject string, mailtext string ) {
 	var cfg MainConfig
-    err := gcfg.ReadFileInto( &cfg, "/home/markus/gocode/src/github.com/madmax411/fritztools/fritzTools.gcfg")
+    err := gcfg.ReadFileInto( &cfg, "fritzTools.gcfg")
     if err != nil {
         log.Fatal(err)
     }    
@@ -128,12 +128,10 @@ type Config_Mail struct {
 
 func main() {
 	var cfg MainConfig
-    err := gcfg.ReadFileInto( &cfg, "/home/markus/gocode/src/github.com/madmax411/fritztools/fritzTools.gcfg")
+    err := gcfg.ReadFileInto( &cfg, "fritzTools.gcfg")
     if err != nil {
         log.Fatal(err)
     }    
-   
-    SendMail( "Fritz", "Test" )
    
     conn, err := textproto.Dial("tcp", cfg.Fritzbox.Host + ":" + cfg.Fritzbox.Port)
 	defer conn.Close()
