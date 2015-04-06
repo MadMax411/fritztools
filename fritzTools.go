@@ -16,6 +16,34 @@ type lineHandler struct {
     cfg MainConfig
 }
 
+type lastCall struct {
+    PhoneNo string
+    DateTime string
+}
+
+type MainConfig struct {
+    Fritzbox Config_Fritzbox
+    SMTP Config_SMTP
+    Mail Config_Mail    
+}
+
+type Config_Fritzbox struct {
+    Host string
+    Port string
+}
+
+type Config_SMTP struct {
+    Host string
+    Port string
+    User string
+    Password string
+}
+
+type Config_Mail struct {
+    From string
+    To string
+}
+
 func SendMail( subject string, mailtext string, cfg MainConfig ) {
    
     smtpServer := cfg.SMTP.Host
@@ -61,7 +89,8 @@ func SendMail( subject string, mailtext string, cfg MainConfig ) {
 func (l *lineHandler) Watch() {
     lastAction := ""
 	currAction := ""
-    lastCallNo := ""
+
+    call := lastCall{}
 
 	for {
 		line, err := l.cn.Reader.ReadLine()
@@ -75,13 +104,15 @@ func (l *lineHandler) Watch() {
 		switch currAction {
 		case "RING":
 			fmt.Println("Call from " + callValues[3])
-			lastCallNo = callValues[3]
+			call.PhoneNo = callValues[3]
+			call.DateTime = callValues[0]
 		case "CONNECT":
 			fmt.Println("Connected with extention station #" + callValues[3])
 		case "DISCONNECT":
 			if lastAction == "RING" {
-				fmt.Println("Send a info mail...")
-				SendMail( "Fritz: Call", "Call from " + lastCallNo, l.cfg )
+				fmt.Print("Send a info mail...")
+				SendMail( "Fritz: Call", "Call from " + call.PhoneNo + " at " + call.DateTime, l.cfg )
+				fmt.Println("Ok")
 			}
 
 			fmt.Println("Disconneted")
@@ -93,37 +124,13 @@ func (l *lineHandler) Watch() {
 	return   
 }
 
-type MainConfig struct {
-    Fritzbox Config_Fritzbox
-    SMTP Config_SMTP
-    Mail Config_Mail    
-}
-
-type Config_Fritzbox struct {
-    Host string
-    Port string
-}
-
-type Config_SMTP struct {
-    Host string
-    Port string
-    User string
-    Password string
-}
-
-type Config_Mail struct {
-    From string
-    To string
-}
-
-
-
 
 func main() {
 	var cfg MainConfig
     err := gcfg.ReadFileInto( &cfg, "fritzTools.gcfg")
     if err != nil {
         log.Fatal(err)
+        panic(1)
     }    
    
     conn, err := textproto.Dial("tcp", cfg.Fritzbox.Host + ":" + cfg.Fritzbox.Port)
