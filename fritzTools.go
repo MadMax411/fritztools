@@ -13,15 +13,11 @@ import (
 
 type lineHandler struct {
     cn *textproto.Conn
+    cfg MainConfig
 }
 
-func SendMail( subject string, mailtext string ) {
-	var cfg MainConfig
-    err := gcfg.ReadFileInto( &cfg, "fritzTools.gcfg")
-    if err != nil {
-        log.Fatal(err)
-    }    
-
+func SendMail( subject string, mailtext string, cfg MainConfig ) {
+   
     smtpServer := cfg.SMTP.Host
 	auth := smtp.PlainAuth(
 		"",
@@ -50,15 +46,12 @@ func SendMail( subject string, mailtext string ) {
 	}
 	message += "\r\n" + base64.StdEncoding.EncodeToString([]byte(body))
  
-	// Connect to the server, authenticate, set the sender and recipient,
-	// and send the email all in one step.
 	errmail := smtp.SendMail(
 		smtpServer + ":" + cfg.SMTP.Port,
 		auth,
 		from.Address,
 		[]string{to.Address},
 		[]byte(message),
-		//[]byte("This is the email body."),
 	)
 	if errmail != nil {
 		log.Fatal(errmail)
@@ -88,7 +81,7 @@ func (l *lineHandler) Watch() {
 		case "DISCONNECT":
 			if lastAction == "RING" {
 				fmt.Println("Send a info mail...")
-				SendMail( "Fritz: Call", "Call from " + lastCallNo )
+				SendMail( "Fritz: Call", "Call from " + lastCallNo, l.cfg )
 			}
 
 			fmt.Println("Disconneted")
@@ -143,6 +136,7 @@ func main() {
    
     lh := lineHandler{}
     lh.cn = conn
+    lh.cfg = cfg
 
     lh.Watch()
 }
