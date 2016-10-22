@@ -103,45 +103,38 @@ func (l *lineHandler) Watch() {
 			panic(err)
 		}
 
-		fmt.Println("Fritzbox: " + line )
-
 		callValues := strings.Split(line, ";")
 		currAction = callValues[1]
 
 		switch currAction {
 		case "RING":
-			fmt.Println("Call from " + callValues[3] + " to " + callValues[4])
+			//fmt.Println("Call from " + callValues[3] + " to " + callValues[4])
 			call.PhoneNo = callValues[3]
 			call.DateTime = callValues[0]
 			call.ToNo = callValues[4]
 
 		case "CONNECT":
-			fmt.Println("Connected with extention station #" + callValues[3])
+			//fmt.Println("Connected with extention station #" + callValues[3])
 			extStation = callValues[3]
 
 		case "DISCONNECT":
+			msg := ""
+
 			if lastAction == "RING" {
-				fmt.Print("Send a info mail...")
-
-				msg := "Unanswered call from " + call.PhoneNo + " at " + call.DateTime
-				msg := "To number " + call.ToNo
-
-				SendMail("Fritz: Call", msg, l.cfg)
-				fmt.Println("Ok")
+				//fmt.Print("Send a info mail...")
+				msg = "Unanswered call from " + call.PhoneNo + " at " + call.DateTime
+				msg += "\nTo number " + call.ToNo
 			}
 
 			if lastAction == "CONNECT" && extStation == "40" {
-				fmt.Print("Send a info mail...")
-
-				msg := "Call from " + call.PhoneNo + " at " + call.DateTime
-				msg := "\nTo number " + call.ToNo
+				//fmt.Print("Send a info mail...")
+				msg = "Call from " + call.PhoneNo + " at " + call.DateTime
+				msg += "\nTo number " + call.ToNo
 				msg += "\nCall is answered by the answering machine"
-
-				SendMail("Fritz: Call", msg, l.cfg)
-				fmt.Println("Ok")
 			}
 
-			fmt.Println("Disconneted")
+			SendMail("Fritz: PhoneCall", msg, l.cfg)
+			//fmt.Println("Disconneted")
 		}
 
 		lastAction = currAction
