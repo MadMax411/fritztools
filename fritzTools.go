@@ -19,6 +19,7 @@ type lineHandler struct {
 type lastCall struct {
 	PhoneNo  string
 	DateTime string
+	ToNo     string
 }
 
 type MainConfig struct {
@@ -33,6 +34,7 @@ type Config_Fritzbox struct {
 }
 
 type Config_SMTP struct {
+	SendMail bool
 	Host     string
 	Port     string
 	User     string
@@ -46,43 +48,45 @@ type Config_Mail struct {
 
 func SendMail(subject string, mailtext string, cfg MainConfig) {
 
-	smtpServer := cfg.SMTP.Host
-	auth := smtp.PlainAuth(
-		"",
-		cfg.SMTP.User,
-		cfg.SMTP.Password,
-		smtpServer,
-	)
+	if cfg.SMTP.SendMail {
+		smtpServer := cfg.SMTP.Host
+		auth := smtp.PlainAuth(
+			"",
+			cfg.SMTP.User,
+			cfg.SMTP.Password,
+			smtpServer,
+		)
 
-	from := mail.Address{"", cfg.Mail.From}
-	to := mail.Address{"", cfg.Mail.To}
-	title := subject
+		from := mail.Address{"", cfg.Mail.From}
+		to := mail.Address{"", cfg.Mail.To}
+		title := subject
 
-	body := mailtext
+		body := mailtext
 
-	header := make(map[string]string)
-	header["From"] = from.String()
-	header["To"] = to.String()
-	header["Subject"] = title
-	header["MIME-Version"] = "1.0"
-	header["Content-Type"] = "text/plain; charset=\"utf-8\""
-	header["Content-Transfer-Encoding"] = "base64"
+		header := make(map[string]string)
+		header["From"] = from.String()
+		header["To"] = to.String()
+		header["Subject"] = title
+		header["MIME-Version"] = "1.0"
+		header["Content-Type"] = "text/plain; charset=\"utf-8\""
+		header["Content-Transfer-Encoding"] = "base64"
 
-	message := ""
-	for k, v := range header {
-		message += fmt.Sprintf("%s: %s\r\n", k, v)
-	}
-	message += "\r\n" + base64.StdEncoding.EncodeToString([]byte(body))
+		message := ""
+		for k, v := range header {
+			message += fmt.Sprintf("%s: %s\r\n", k, v)
+		}
+		message += "\r\n" + base64.StdEncoding.EncodeToString([]byte(body))
 
-	errmail := smtp.SendMail(
-		smtpServer+":"+cfg.SMTP.Port,
-		auth,
-		from.Address,
-		[]string{to.Address},
-		[]byte(message),
-	)
-	if errmail != nil {
-		log.Fatal(errmail)
+		errmail := smtp.SendMail(
+			smtpServer+":"+cfg.SMTP.Port,
+			auth,
+			from.Address,
+			[]string{to.Address},
+			[]byte(message),
+		)
+		if errmail != nil {
+			log.Fatal(errmail)
+		}
 	}
 }
 
@@ -104,33 +108,32 @@ func (l *lineHandler) Watch() {
 
 		switch currAction {
 		case "RING":
-			//fmt.Println("Call from " + callValues[3])
+			//fmt.Println("Call from " + callValues[3] + " to " + callValues[4])
 			call.PhoneNo = callValues[3]
 			call.DateTime = callValues[0]
+			call.ToNo = callValues[4]
 
 		case "CONNECT":
 			//fmt.Println("Connected with extention station #" + callValues[3])
 			extStation = callValues[3]
 
 		case "DISCONNECT":
+			msg := ""
+
 			if lastAction == "RING" {
 				//fmt.Print("Send a info mail...")
-
-				msg := "Unanswered call from " + call.PhoneNo + " at " + call.DateTime
-
-				SendMail("Fritz: Call", msg, l.cfg)
-				//fmt.Println("Ok")
+				msg = "Unanswered call from " + call.PhoneNo + " at " + call.DateTime
+				msg += "\nTo number " + call.ToNo
 			}
 
 			if lastAction == "CONNECT" && extStation == "40" {
 				//fmt.Print("Send a info mail...")
-
-				msg := "Call from " + call.PhoneNo + " at " + call.DateTime
+				msg = "Call from " + call.PhoneNo + " at " + call.DateTime
+				msg += "\nTo number " + call.ToNo
 				msg += "\nCall is answered by the answering machine"
-
-				SendMail("Fritz: Call", msg, l.cfg)
-				//fmt.Println("Ok")
 			}
+
+			SendMail("Fritz: PhoneCall", msg, l.cfg)
 			//fmt.Println("Disconneted")
 		}
 

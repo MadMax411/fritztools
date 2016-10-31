@@ -1,1 +1,1 @@
-# fritztools
+# fritzTools
